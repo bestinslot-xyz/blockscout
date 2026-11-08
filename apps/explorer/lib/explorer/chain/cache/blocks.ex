@@ -4,6 +4,7 @@ defmodule Explorer.Chain.Cache.Blocks do
   """
 
   alias Explorer.Chain.Block
+  alias Explorer.Repo
 
   use Explorer.Chain.OrderedCache,
     name: :blocks,
@@ -61,7 +62,12 @@ defmodule Explorer.Chain.Cache.Blocks do
   """
   @spec sanitize_before_update(Block.t()) :: Block.t()
   def sanitize_before_update(block) do
-    block = Block.aggregate_transactions(block)
+    # The block's transactions as stored, not as returned by its import: a
+    # re-import returns none for rows it left unchanged.
+    block =
+      block
+      |> Repo.preload(:transactions, force: true)
+      |> Block.aggregate_transactions()
 
     %{block | transactions: []}
   end
